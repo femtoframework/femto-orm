@@ -31,10 +31,7 @@ public class MysqlDialect implements RdbmsDialect {
     @Override
     public String getLimitString(String querySelect, boolean hasOffset) {
         querySelect = querySelect.trim();
-        StringBuilder sb = new StringBuilder(querySelect.length() + 20);
-        sb.append(querySelect);
-        sb.append(hasOffset ? " LIMIT ?, ?" : " LIMIT ?");
-        return sb.toString();
+        return querySelect + (hasOffset ? " LIMIT ?, ?" : " LIMIT ?");
     }
 
     /**

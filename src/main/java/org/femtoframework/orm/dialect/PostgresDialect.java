@@ -21,7 +21,7 @@ public class PostgresDialect implements RdbmsDialect {
      */
     @Override
     public String getLimitString(String querySelect, boolean hasOffset) {
-        return querySelect + (hasOffset ? " limit ? offset ?" : " limit ?");
+        return querySelect + (hasOffset ? " offset ? limit ?" : " limit ?");
     }
 
     /**

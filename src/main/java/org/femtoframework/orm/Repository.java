@@ -1,9 +1,14 @@
 package org.femtoframework.orm;
 
 import org.femtoframework.parameters.Parameters;
+import org.femtoframework.parameters.ParametersMap;
 import org.femtoframework.util.CollectionUtil;
+import org.femtoframework.util.StringUtil;
 
 import java.util.List;
+import java.util.Map;
+
+import static org.femtoframework.orm.Limit.UNLIMITED;
 
 /**
  * CRUD Repository
@@ -59,7 +64,7 @@ public interface Repository<E> {
     /**
      * List entities by given conditions
      *
-     * @param query Query part after "WHERE" in SQL, query should use "id = {foo_id} AND name = {foo_name}" syntax
+     * @param query Query part after "WHERE" in SQL, query should use "id = :foo_id AND name = :foo_name" syntax
      * @param parameters Parameters should have {foo_id->123,foo_name->'Sheldon'}
      * @return entities, zero size list if there is no entity
      * @throws RepositoryException SQL Exception or downstream exceptions
@@ -75,7 +80,9 @@ public interface Repository<E> {
      * @return all entities, zero size list if there is no entity
      * @throws RepositoryException SQL Exception or downstream exceptions
      */
-    List<E> listAll(String[] columns) throws RepositoryException;
+    default List<E> listAll(String[] columns) throws RepositoryException {
+        return listAll(columns, UNLIMITED, null);
+    }
 
     /**
      * List entities by given conditions
@@ -86,18 +93,68 @@ public interface Repository<E> {
      * @return entities, zero size list if there is no entity
      * @throws RepositoryException SQL Exception or downstream exceptions
      */
-    List<E> listBy(String[] columns, String query, Object... parameters) throws RepositoryException;
+    default List<E> listBy(String[] columns, String query, Object... parameters) throws RepositoryException {
+        return listBy(columns, UNLIMITED, null, query, parameters);
+    }
 
     /**
      * List entities by given conditions
      *
      * @param columns Specify the columns to list, if first column is "*", means select all columns
-     * @param query Query part after "WHERE" in SQL, query should use "id = {foo_id} AND name = {foo_name}" syntax
+     * @param query Query part after "WHERE" in SQL, query should use "id = :foo_id AND name = :foo_name" syntax
      * @param parameters Parameters should have {foo_id->123,foo_name->'Sheldon'}
      * @return entities, zero size list if there is no entity
      * @throws RepositoryException SQL Exception or downstream exceptions
      */
-    List<E> listBy(String[] columns, String query, Parameters parameters) throws RepositoryException;
+    default List<E> listBy(String[] columns, String query, Parameters parameters) throws RepositoryException {
+        return listBy(columns, UNLIMITED, null, query, parameters);
+    }
+
+    /**
+     * List all entities
+     *
+     * @param columns Specify the columns to list, if first column is "*", means select all columns
+     * @param limit Limit the result set
+     * @param sortBy SortBy specific column
+     * @return all entities, zero size list if there is no entity
+     * @throws RepositoryException SQL Exception or downstream exceptions
+     */
+    default List<E> listAll(String[] columns, Limit limit, SortBy sortBy) throws RepositoryException {
+        return listBy(columns, limit, sortBy, null);
+    }
+
+    /**
+     * List entities by given conditions
+     *
+     * @param columns Specify the columns to list, if first column is "*", means select all columns
+     * @param limit Limit the result set
+     * @param sortBy SortBy specific column
+     * @param query Query part after "WHERE" in SQL, query should use "id = ? AND name = ?" syntax, if it is null and there is no parameter, that means all
+     * @param parameters Parameters in sequences
+     * @return entities, zero size list if there is no entity
+     * @throws RepositoryException SQL Exception or downstream exceptions
+     */
+    List<E> listBy(String[] columns, Limit limit, SortBy sortBy, String query, Object... parameters) throws RepositoryException;
+
+    /**
+     * List entities by given conditions
+     *
+     * @param columns Specify the columns to list, if first column is "*", means select all columns
+     * @param limit Limit the result set
+     * @param sortBy SortBy specific column
+     * @param query Query part after "WHERE" in SQL, query should use "id = :foo_id AND name = :foo_name" syntax
+     * @param parameters Parameters should have {foo_id->123,foo_name->'Sheldon'}
+     * @return entities, zero size list if there is no entity
+     * @throws RepositoryException SQL Exception or downstream exceptions
+     */
+    default List<E> listBy(String[] columns, Limit limit, SortBy sortBy, String query, Parameters parameters) throws RepositoryException {
+        if (StringUtil.isInvalid(query)) {
+            throw new IllegalArgumentException("No any condition in the query:" + query);
+        }
+        Parameters<Integer> index = new ParametersMap<>();
+        String paramQuery = toIndexedQuery(query,index);
+        return listBy(columns, limit, sortBy, paramQuery, toParameters(index, parameters));
+    }
 
     /**
      * Retrieve entity by id
@@ -136,12 +193,19 @@ public interface Repository<E> {
     /**
      * Retrieve entity by given conditions
      *
-     * @param query Query part after "WHERE" in SQL, query should use "id = {foo_id} AND name = {foo_name}" syntax
+     * @param query Query part after "WHERE" in SQL, query should use "id = :foo_id AND name = :foo_name" syntax
      * @param parameters Parameters should have {foo_id->123,foo_name->'Sheldon'}
      * @return Entity, null if there is no such entity
      * @throws RepositoryException SQL Exception or downstream exceptions
      */
-    E getBy(String query, Parameters parameters) throws RepositoryException;
+    default E getBy(String query, Parameters parameters) throws RepositoryException {
+        if (StringUtil.isInvalid(query)) {
+            throw new IllegalArgumentException("No any condition in the query:" + query);
+        }
+        Parameters<Integer> index = new ParametersMap<>();
+        String paramQuery = toIndexedQuery(query,index);
+        return getBy(paramQuery, toParameters(index, parameters));
+    }
 
     //=========CREATE==========
     /**
@@ -322,10 +386,73 @@ public interface Repository<E> {
     /**
      * Retrieve entity by given conditions
      *
-     * @param query Query part after "WHERE" in SQL, query should use "id = {foo_id} AND name = {foo_name}" syntax
+     * @param query Query part after "WHERE" in SQL, query should use "id = :foo_id AND name = :foo_name" syntax
      * @param parameters Parameters should have {foo_id->123,foo_name->'Sheldon'}
      * @return Entity, null if there is no such entity
      * @throws RepositoryException SQL Exception or downstream exceptions
      */
-    boolean deleteBy(String query, Parameters parameters) throws RepositoryException;
+    default boolean deleteBy(String query, Parameters parameters) throws RepositoryException {
+        if (StringUtil.isInvalid(query)) {
+            throw new IllegalArgumentException("No any condition in the query:" + query);
+        }
+        Parameters<Integer> index = new ParametersMap<>();
+        String paramQuery = toIndexedQuery(query,index);
+        return deleteBy(paramQuery, toParameters(index, parameters));
+    }
+
+    //"id = :foo_id AND name = :foo_name"
+    static String toIndexedQuery(String query, Parameters<Integer> index) {
+        if (StringUtil.isInvalid(query)) {
+            return query;
+        }
+        int start = query.indexOf(':');
+        if (start > 0) {
+            StringBuilder sb = new StringBuilder(query.length());
+            sb.append(query, 0, start);
+            int i = 0;
+            String key;
+            while(true) {
+                int end = query.indexOf(' ', start+1);
+                boolean next = true;
+                if (end < 0) {
+                    end = query.length();
+                    next = false;
+                }
+                key = query.substring(start+1, end);
+                index.put(key, i++);
+                sb.append('?');
+                if (next) {
+                    start = query.indexOf(':', end);
+                    if (start > 0) {
+                        sb.append(query, end, start);
+                    }
+                    else { //No more ':'
+                        sb.append(query, end, query.length());
+                        break;
+                    }
+                }
+                else {
+                    break;
+                }
+            }
+            return sb.toString();
+        }
+        return query;
+    }
+
+    /**
+     * Convert to array
+     *
+     * @param index Index
+     * @param parameters Parameters
+     * @return Array
+     */
+    static Object[] toParameters(Parameters<Integer> index, Parameters parameters) {
+        Object[] array = new Object[index.size()];
+        for(Map.Entry<String, Integer> entry:index.entrySet()) {
+            array[entry.getValue()] = parameters.get(entry.getKey());
+        }
+        return array;
+    }
+
 }
