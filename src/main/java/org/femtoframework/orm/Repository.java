@@ -1,5 +1,6 @@
 package org.femtoframework.orm;
 
+import org.femtoframework.bean.NamedBean;
 import org.femtoframework.parameters.Parameters;
 import org.femtoframework.parameters.ParametersMap;
 import org.femtoframework.util.CollectionUtil;
@@ -35,7 +36,7 @@ import static org.femtoframework.orm.Limit.UNLIMITED;
  * 
  * @param <E>
  */
-public interface Repository<E> {
+public interface Repository<E> extends NamedBean {
 
     String[] LIST_ALL_COLUMNS = { "*" };
 

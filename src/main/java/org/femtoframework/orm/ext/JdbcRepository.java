@@ -1,11 +1,10 @@
 package org.femtoframework.orm.ext;
 
 import org.femtoframework.bean.InitializableMBean;
-import org.femtoframework.coin.annotation.Ignore;
-import org.femtoframework.coin.info.BeanInfo;
-import org.femtoframework.coin.info.BeanInfoFactory;
-import org.femtoframework.coin.info.PropertyInfo;
-import org.femtoframework.coin.spi.BeanInfoFactoryAware;
+import org.femtoframework.bean.annotation.Ignore;
+import org.femtoframework.bean.info.BeanInfo;
+import org.femtoframework.bean.info.BeanInfoUtil;
+import org.femtoframework.bean.info.PropertyInfo;
 import org.femtoframework.implement.ImplementUtil;
 import org.femtoframework.lang.reflect.Reflection;
 import org.femtoframework.orm.Limit;
@@ -25,11 +24,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class JdbcRepository<E> implements Repository<E>, BeanInfoFactoryAware, InitializableMBean {
+public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
 
     private static Logger logger = LoggerFactory.getLogger(JdbcRepository.class);
-
-    private BeanInfoFactory beanInfoFactory;
 
     private DataSource dataSource;
 
@@ -203,6 +200,40 @@ public class JdbcRepository<E> implements Repository<E>, BeanInfoFactoryAware, I
         return entity;
     }
 
+
+    private String insertSQL = null;
+
+
+    protected String getInsertSQL() {
+        if (insertSQL == null) {
+            StringBuilder sb = new StringBuilder(128);
+            sb.append("INSERT INTO " + tableName + " (");
+            Collection<PropertyInfo> propertyInfos = beanInfo.getProperties();
+            boolean first = true;
+            int count = 0;
+            for(PropertyInfo propertyInfo: propertyInfos) {
+                if (propertyInfo.isReadable()) {
+                    String columnName = NamingConvention.format(propertyInfo.getName());
+                    if (first) {
+                        first = false;
+                        sb.append(columnName);
+                    }
+                    else {
+                        sb.append(',').append(columnName);
+                    }
+                    count ++;
+                }
+            }
+            sb.append(") VALUES (?");
+            for(int i = 1; i < count; i ++) {
+                sb.append(",?");
+            }
+            sb.append(')');
+            insertSQL = sb.toString();
+        }
+        return insertSQL;
+    }
+
     /**
      * Create entity with specific options such as {force->true} to avoid cache
      *
@@ -213,7 +244,23 @@ public class JdbcRepository<E> implements Repository<E>, BeanInfoFactoryAware, I
      */
     @Override
     public boolean create(E entity, Parameters options) throws RepositoryException {
-        return false;
+        String sql = getInsertSQL();
+        try (Connection conn = getConnection()) {
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                int i = 1;
+                for(PropertyInfo propertyInfo: beanInfo.getProperties()) {
+                    if (propertyInfo.isReadable()) {
+                        pstmt.setObject(i ++, propertyInfo.invokeGetter(entity));
+                    }
+                }
+                return pstmt.executeUpdate() >= 1;
+            }
+        }
+        catch(SQLException sqle) {
+            String msg = "Execute sql:" + toString(sql, null) + " error";
+            logger.error(msg, sqle);
+            throw new RepositoryException(msg, sqle);
+        }
     }
 
     /**
@@ -226,7 +273,31 @@ public class JdbcRepository<E> implements Repository<E>, BeanInfoFactoryAware, I
      */
     @Override
     public boolean[] create(List<E> entity, Parameters options) throws RepositoryException {
-        return new boolean[0];
+        String sql = getInsertSQL();
+        try (Connection conn = getConnection()) {
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                for(E e: entity) {
+                    int i = 1;
+                    for (PropertyInfo propertyInfo : beanInfo.getProperties()) {
+                        if (propertyInfo.isReadable()) {
+                            pstmt.setObject(i++, propertyInfo.invokeGetter(e));
+                        }
+                    }
+                    pstmt.addBatch();
+                }
+                int[] batch = pstmt.executeBatch();
+                boolean[] result = new boolean[batch.length];
+                for(int i = 0; i < batch.length; i ++) {
+                    result[i] = batch[i] > 0;
+                }
+                return result;
+            }
+        }
+        catch(SQLException sqle) {
+            String msg = "Execute sql:" + toString(sql, null) + " error";
+            logger.error(msg, sqle);
+            throw new RepositoryException(msg, sqle);
+        }
     }
 
     /**
@@ -363,17 +434,6 @@ public class JdbcRepository<E> implements Repository<E>, BeanInfoFactoryAware, I
         }
     }
 
-    /**
-     * Set BeanInfoFactory
-     *
-     * @param factory BeanInfoFactory
-     */
-    @Override
-    public void setBeanInfoFactory(BeanInfoFactory factory) {
-        this.beanInfoFactory = factory;
-    }
-
-
     private boolean initialized = false;
 
     /**
@@ -428,16 +488,18 @@ public class JdbcRepository<E> implements Repository<E>, BeanInfoFactoryAware, I
         }
 
         //MySQL
-        if (tableName == null) {
-            this.tableName = NamingConvention.format(entityType);
-        }
+
         try {
             entityClass = Reflection.getClass(entityType);
         }
         catch(ClassNotFoundException cnfe) {
             throw new IllegalStateException("No such class:" + entityType, cnfe);
         }
-        this.beanInfo = beanInfoFactory.getBeanInfo(entityClass, true);
+
+        if (tableName == null) {
+            this.tableName = NamingConvention.format(entityClass.getSimpleName());
+        }
+        this.beanInfo = BeanInfoUtil.getBeanInfo(entityClass, true);
 
         try (Connection conn = dataSource.getConnection()) {
             DatabaseMetaData metaData = conn.getMetaData();
@@ -476,5 +538,24 @@ public class JdbcRepository<E> implements Repository<E>, BeanInfoFactoryAware, I
 
     public void setTableName(String tableName) {
         this.tableName = tableName;
+    }
+
+    /**
+     * Name of the object
+     *
+     * @return Name of the object
+     */
+    @Override
+    public String getName() {
+        return getTableName();
+    }
+
+    public Class<E> getEntityClass() {
+        return entityClass;
+    }
+
+    public void setEntityClass(Class<E> entityClass) {
+        this.entityClass = entityClass;
+        setEntityType(entityClass.getName());
     }
 }

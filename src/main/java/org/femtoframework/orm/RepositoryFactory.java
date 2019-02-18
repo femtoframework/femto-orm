@@ -1,13 +1,14 @@
 package org.femtoframework.orm;
 
 import org.femtoframework.parameters.Parameters;
+import org.femtoframework.pattern.Factory;
 
 /**
  * Repository Factory
  *
  * Could be multiple instances from different data sources
  */
-public interface RepositoryFactory {
+public interface RepositoryFactory extends Factory<Repository> {
 
     /**
      * Return Repository by domainClass
