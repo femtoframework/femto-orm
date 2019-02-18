@@ -49,7 +49,7 @@ public class DeviceServiceImpl implements DeviceService {
     }
     
     public List<Device> searchDevicesByProductNo(String key) throws RepositoryException {
-        return repository.listBy("productNo LIKE '%?%'", key);
+        return repository.listBy("product_no LIKE '%?%'", key);
     }
     
     public List<Device> deleteDevice(int id) throws RepositoryException {
