@@ -92,4 +92,13 @@ public interface RdbmsDialect extends NamedBean {
     default String getSelectSequenceNextVal(String name) {
         throw new IllegalStateException("DB:" + getName() + " doesn't support sequence");
     }
+
+    /**
+     * Test Query
+     *
+     * @return Test Query
+     */
+    default String getTestQuery() {
+        return "SELECT 1";
+    }
 }

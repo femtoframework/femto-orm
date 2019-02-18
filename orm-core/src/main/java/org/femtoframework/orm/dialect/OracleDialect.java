@@ -109,4 +109,13 @@ public class OracleDialect implements RdbmsDialect {
     public String getName() {
         return "oracle";
     }
+
+    /**
+     * Test Query
+     *
+     * @return Test Query
+     */
+    public String getTestQuery() {
+        return "SELECT 1 FROM DUAL";
+    }
 }

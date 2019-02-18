@@ -102,7 +102,7 @@ public class Db2Dialect implements RdbmsDialect {
      * @return String The "nextval" select string.
      */
     public String getSequenceNextVal(String name) {
-        return "values nextval for " + name;
+        return "values next value for " + name;
     }
 
     /**
@@ -116,7 +116,7 @@ public class Db2Dialect implements RdbmsDialect {
      * @return String
      */
     public String getSelectSequenceNextVal(String name) {
-        return "select " + getSequenceNextVal(name);
+        return "VALUES NEXT VALUE FOR " + name;
     }
 
     /**
@@ -127,5 +127,14 @@ public class Db2Dialect implements RdbmsDialect {
     @Override
     public String getName() {
         return "db2";
+    }
+
+    /**
+     * Test Query
+     *
+     * @return Test Query
+     */
+    public String getTestQuery() {
+        return "SELECT 1 FROM SYSIBM.SYSDUMMY1";
     }
 }

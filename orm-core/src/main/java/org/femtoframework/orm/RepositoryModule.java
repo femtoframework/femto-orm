@@ -16,6 +16,7 @@ public interface RepositoryModule extends Factory<DataSource> {
 
     /**
      * Return default DataSource, the logic is this,
+     *
      * 1. If there is no DataSource, return null
      * 2. If there is only one DataSource, return the only one.
      * 3. If there is multiple, select first NamedDataSource who has default=true
@@ -24,5 +25,6 @@ public interface RepositoryModule extends Factory<DataSource> {
      * @return The default DataSource
      */
     DataSource getDefaultDataSource();
+
 
 }

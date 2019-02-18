@@ -2,15 +2,12 @@ package org.femtoframework.orm.ext;
 
 import org.femtoframework.bean.InitializableMBean;
 import org.femtoframework.bean.annotation.Ignore;
+import org.femtoframework.bean.annotation.Property;
 import org.femtoframework.bean.info.BeanInfo;
 import org.femtoframework.bean.info.BeanInfoUtil;
 import org.femtoframework.bean.info.PropertyInfo;
-import org.femtoframework.implement.ImplementUtil;
 import org.femtoframework.lang.reflect.Reflection;
-import org.femtoframework.orm.Limit;
-import org.femtoframework.orm.Repository;
-import org.femtoframework.orm.RepositoryException;
-import org.femtoframework.orm.SortBy;
+import org.femtoframework.orm.*;
 import org.femtoframework.orm.dialect.RdbmsDialect;
 import org.femtoframework.parameters.Parameters;
 import org.femtoframework.text.NamingConvention;
@@ -107,8 +104,8 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
             ResultSet rs = null;
             try (PreparedStatement pstmt = conn.prepareStatement(newSql)) {
                 if (parameters != null && parameters.length > 0) {
-                    for(int i = 1; i <= parameters.length; i ++) {
-                        pstmt.setObject(i, parameters);
+                    for(int i = 0; i < parameters.length; i ++) {
+                        pstmt.setObject(i+1, parameters[i]);
                     }
                 }
 
@@ -161,8 +158,8 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
             ResultSet rs = null;
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 if (parameters != null && parameters.length > 0) {
-                    for(int i = 1; i <= parameters.length; i ++) {
-                        pstmt.setObject(i, parameters);
+                    for(int i = 0; i < parameters.length; i ++) {
+                        pstmt.setObject(i+1, parameters[i]);
                     }
                 }
                 rs = pstmt.executeQuery();
@@ -202,6 +199,31 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
         return entity;
     }
 
+    private String idSeqSql = null;
+
+    protected void setId(Connection conn, E entity) throws RepositoryException {
+        if (dialect.supportsSequence()) {
+            PropertyInfo idProperty = beanInfo.getProperty("id");
+            if (idProperty != null && idProperty.isWritable()) {
+                if (idSeqSql == null) {
+                    idSeqSql = dialect.getSelectSequenceNextVal(tableName + "_id_seq");
+                }
+
+                try (PreparedStatement pstmt = conn.prepareStatement(idSeqSql)) {
+                    ResultSet rs = pstmt.executeQuery();
+                    if (rs.next()) {
+                        long id = rs.getLong(1);
+                        idProperty.invokeSetter(entity, id);
+                    }
+                    rs.close();
+                } catch (SQLException sqle) {
+                    String msg = "Execute sql:" + toString(idSeqSql, null) + " error";
+                    logger.error(msg, sqle);
+                    throw new RepositoryException(msg, sqle);
+                }
+            }
+        }
+    }
 
     private String insertSQL = null;
 
@@ -248,6 +270,7 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
     public boolean create(E entity, Parameters options) throws RepositoryException {
         String sql = getInsertSQL();
         try (Connection conn = getConnection()) {
+            setId(conn, entity);
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 int i = 1;
                 for(PropertyInfo propertyInfo: beanInfo.getProperties()) {
@@ -279,6 +302,9 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
         try (Connection conn = getConnection()) {
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 for(E e: entity) {
+
+                    setId(conn, e);
+
                     int i = 1;
                     for (PropertyInfo propertyInfo : beanInfo.getProperties()) {
                         if (propertyInfo.isReadable()) {
@@ -422,8 +448,8 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
         try (Connection conn = getConnection()) {
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 if (parameters != null && parameters.length > 0) {
-                    for (int i = 1; i <= parameters.length; i++) {
-                        pstmt.setObject(i, parameters);
+                    for (int i = 0; i < parameters.length; i++) {
+                        pstmt.setObject(i+1, parameters[i]);
                     }
                 }
                 return pstmt.executeUpdate() >= 1;
@@ -502,16 +528,7 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
             this.tableName = NamingConvention.format(entityClass.getSimpleName());
         }
         this.beanInfo = BeanInfoUtil.getBeanInfo(entityClass, true);
-
-        try (Connection conn = dataSource.getConnection()) {
-            DatabaseMetaData metaData = conn.getMetaData();
-            String productName = metaData.getDatabaseProductName();
-            dialect = ImplementUtil.getInstance(productName.toLowerCase(), RdbmsDialect.class);
-        }
-        catch(SQLException sqle) {
-            logger.error("Retrieve database information error", sqle);
-            throw new IllegalStateException("Retrieve database information error", sqle);
-        }
+        this.dialect = RepositoryUtil.getDialect(dataSource);
     }
 
     public RdbmsDialect getDialect() {
