@@ -36,6 +36,8 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
 
     private BeanInfo beanInfo;
 
+    private PropertyInfo idPropertyInfo = null;
+
     private String tableName;
 
     protected Connection getConnection() throws RepositoryException {
@@ -203,8 +205,7 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
 
     protected void setId(Connection conn, E entity) throws RepositoryException {
         if (dialect.supportsSequence()) {
-            PropertyInfo idProperty = beanInfo.getProperty("id");
-            if (idProperty != null && idProperty.isWritable()) {
+            if (idPropertyInfo != null && idPropertyInfo.isWritable()) {
                 if (idSeqSql == null) {
                     idSeqSql = dialect.getSelectSequenceNextVal(tableName + "_id_seq");
                 }
@@ -213,7 +214,7 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
                     ResultSet rs = pstmt.executeQuery();
                     if (rs.next()) {
                         long id = rs.getLong(1);
-                        idProperty.invokeSetter(entity, id);
+                        idPropertyInfo.invokeSetter(entity, id);
                     }
                     rs.close();
                 } catch (SQLException sqle) {
@@ -256,6 +257,35 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
             insertSQL = sb.toString();
         }
         return insertSQL;
+    }
+
+    private String updateSQL = null;
+
+    protected String getUpdateSQL() {
+        if (updateSQL == null) {
+            StringBuilder sb = new StringBuilder(128);
+            sb.append("UPDATE ").append(tableName).append(" SET ");
+            Collection<PropertyInfo> propertyInfos = beanInfo.getProperties();
+            boolean first = true;
+            for(PropertyInfo propertyInfo: propertyInfos) {
+                if (propertyInfo.isReadable()) {
+                    String name = propertyInfo.getName();
+                    if (!"id".equalsIgnoreCase(name)) {
+                        String columnName = NamingConvention.format(name);
+                        if (first) {
+                            first = false;
+                            sb.append(columnName).append("=?");
+                        }
+                        else {
+                            sb.append(',').append(columnName).append("=?");
+                        }
+                    }
+                }
+            }
+            sb.append(" WHERE id = ?");
+            updateSQL = sb.toString();
+        }
+        return updateSQL;
     }
 
     /**
@@ -338,20 +368,81 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
      */
     @Override
     public boolean update(E entity, Parameters options) throws RepositoryException {
-        return false;
+        String updateSQL = getUpdateSQL();
+
+        try (Connection conn = getConnection()) {
+            try (PreparedStatement pstmt = conn.prepareStatement(updateSQL)) {
+                fillForUpdate(pstmt, entity);
+                return pstmt.executeUpdate() >= 1;
+            }
+        }
+        catch(SQLException sqle) {
+            String msg = "Execute sql:" + toString(updateSQL, null) + " error";
+            logger.error(msg, sqle);
+            throw new RepositoryException(msg, sqle);
+        }
+    }
+
+
+    protected PropertyInfo fillForUpdate(PreparedStatement pstmt, E entity) throws SQLException {
+        int i = 1;
+
+        for(PropertyInfo propertyInfo: beanInfo.getProperties()) {
+            if (propertyInfo.isReadable()) {
+                String name = propertyInfo.getName();
+                if (!"id".equalsIgnoreCase(name)) {
+                    pstmt.setObject(i++, propertyInfo.invokeGetter(entity));
+                }
+                else {
+                    idPropertyInfo = propertyInfo;
+                }
+            }
+        }
+//        if (idPropertyInfo == null) {
+//            throw new IllegalStateException("No 'id'?");
+//        }
+//        else {
+        int id = idPropertyInfo.invokeGetter(entity);
+        if (id == 0) {
+            throw new IllegalStateException("The id is zero");
+        }
+        pstmt.setObject(i, id);
+//        }
+        return idPropertyInfo;
     }
 
     /**
      * Update entities with specific options such as {batch_size->100} to avoid cache
      *
-     * @param entity  Entity entity
+     * @param entities  Entity entity
      * @param options Options
      * @return Statuses of update
      * @throws RepositoryException SQL Exception or downstream exceptions
      */
     @Override
-    public boolean[] update(List<E> entity, Parameters options) throws RepositoryException {
-        return new boolean[0];
+    public boolean[] update(List<E> entities, Parameters options) throws RepositoryException {
+        String updateSQL = getUpdateSQL();
+
+        try (Connection conn = getConnection()) {
+            boolean[] result = new boolean[entities.size()];
+            try (PreparedStatement pstmt = conn.prepareStatement(updateSQL)) {
+                for(E entity: entities) {
+                    fillForUpdate(pstmt, entity);
+                    pstmt.addBatch();
+                }
+                int[] batchResult = pstmt.executeBatch();
+                int i = 0;
+                for (int r : batchResult) {
+                    result[i] = r > 0;
+                }
+                return result;
+            }
+        }
+        catch(SQLException sqle) {
+            String msg = "Execute sql:" + toString(updateSQL, null) + " error";
+            logger.error(msg, sqle);
+            throw new RepositoryException(msg, sqle);
+        }
     }
 
     /**
@@ -364,20 +455,55 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
      */
     @Override
     public int save(E entity, Parameters options) throws RepositoryException {
-        return 0;
+        int id = idPropertyInfo.invokeGetter(entity);
+        if (id == 0) {
+            //Create
+            return create(entity, options) ? 1 : -1;
+        }
+        else {
+            //Update
+            return update(entity, options) ? 0 : -1;
+        }
     }
 
     /**
      * Update entities with specific options such as {batch_size->100} to avoid cache
      *
-     * @param entity  Entity entity
+     * @param entities  Entities
      * @param options Options
      * @return Statuses of update
      * @throws RepositoryException SQL Exception or downstream exceptions
      */
     @Override
-    public boolean[] save(List<E> entity, Parameters options) throws RepositoryException {
-        return new boolean[0];
+    public boolean[] save(List<E> entities, Parameters options) throws RepositoryException {
+        List<E> toCreate = new ArrayList<>(entities.size());
+        List<E> toUpdate = new ArrayList<>(entities.size());
+        boolean[] result = new boolean[entities.size()];
+        int i = 0;
+        for(E entity: entities) {
+            int id = idPropertyInfo.invokeGetter(entity);
+            if (id == 0) {
+                toCreate.add(entity);
+                result[i++] = true;
+            }
+            else {
+                toUpdate.add(entity);
+                result[i++] = false;
+            }
+        }
+
+        boolean[] created = create(toCreate, options);
+        boolean[] updated = update(toUpdate, options);
+        int j = 0, k = 0;
+        for(i = 0; i < result.length; i ++) {
+            if (result[i]) { //Create
+                result[i++] = created[j++];
+            }
+            else {
+                result[i++] = updated[k++];
+            }
+        }
+        return result;
     }
 
     /**
@@ -486,27 +612,17 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
 
     private RdbmsDialect dialect;
 
-//    /**
-//     * Table Metadata
-//     */
-//    protected void fetchTableMetadata() {
-//        try (Connection conn = dataSource.getConnection()) {
-//            Statement statement = conn.createStatement();
-//            statement.execute("SELECT * FROM " + tableName + " ")
-//            String productName = metaData.getDatabaseProductName();
-//            dialect = ImplementUtil.getInstance(productName.toLowerCase(), RdbmsDialect.class);
-//        }
-//        catch(SQLException sqle) {
-//            logger.error("Retrieve database information error", sqle);
-//            throw new IllegalStateException("Retrieve database information error", sqle);
-//        }
-//    }
+
+    @Override
+    public void init() {
+        InitializableMBean.super.init();
+    }
 
     /**
      * Initiliaze internally
      */
     @Override
-    public void _doInitialize() {
+    public void _doInit() {
         if (dataSource == null) {
             throw new IllegalStateException("No data source was bound to this repository for table:" + tableName);
         }
@@ -528,6 +644,10 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
             this.tableName = NamingConvention.format(entityClass.getSimpleName());
         }
         this.beanInfo = BeanInfoUtil.getBeanInfo(entityClass, true);
+        this.idPropertyInfo = beanInfo.getProperty("id");
+        if (idPropertyInfo == null) {
+            throw new IllegalStateException("No 'id' in the entity");
+        }
         this.dialect = RepositoryUtil.getDialect(dataSource);
     }
 

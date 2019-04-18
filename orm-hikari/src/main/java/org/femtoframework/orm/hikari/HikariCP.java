@@ -49,7 +49,7 @@ public class HikariCP extends HikariDataSource implements LifecycleMBean, NamedD
     /**
      * Initiliaze internally
      */
-    public void _doInitialize() {
+    public void _doInit() {
         if (getProvider() != null) { //AutoConfig
             RdbmsDialect dialect = RepositoryUtil.getDialect(getProvider());
             if (dialect != null) {

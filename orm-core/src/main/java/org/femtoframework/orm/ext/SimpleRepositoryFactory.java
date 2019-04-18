@@ -32,7 +32,7 @@ public class SimpleRepositoryFactory extends BaseFactory<Repository> implements 
                     JdbcRepository<E> jdbcRepository = new JdbcRepository<>();
                     jdbcRepository.setDataSource(dataSource);
                     jdbcRepository.setEntityClass(domainClass);
-                    jdbcRepository.initialize();
+                    jdbcRepository.init();
                     add(jdbcRepository);
                     repository = jdbcRepository;
                 }
