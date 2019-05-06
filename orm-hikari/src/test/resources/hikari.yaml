@@ -1,8 +1,9 @@
-_namespace: orm
-_name: derby
-_kind: bean
-_type: org.femtoframework.orm.hikari.HikariCP
-default: true
-jdbcUrl: jdbc:derby:device;create=true
-#dataSourceProperties:
-#  propertyName: propertyValue
+apiVersion: coin/v1
+kind: Component
+metadata:
+  namespace: orm
+  name: derby
+spec:
+  class: org.femtoframework.orm.hikari.HikariCP
+  default: true
+  jdbcUrl: jdbc:derby:device;create=true
