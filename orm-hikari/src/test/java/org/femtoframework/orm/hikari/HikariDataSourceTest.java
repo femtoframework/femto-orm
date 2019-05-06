@@ -5,6 +5,7 @@ import org.femtoframework.bean.info.BeanInfo;
 import org.femtoframework.bean.info.BeanInfoUtil;
 import org.femtoframework.coin.CoinModule;
 import org.femtoframework.coin.CoinUtil;
+import org.femtoframework.coin.DefaultComponentFactory;
 import org.femtoframework.coin.Namespace;
 import org.femtoframework.orm.*;
 import org.femtoframework.orm.domain.Device;

@@ -16,13 +16,21 @@ public class SortBy implements Externalizable {
     public SortBy() {
     }
 
-    public SortBy(String column) {
+    protected SortBy(String column) {
         this(column, true);
     }
 
-    public SortBy(String column, boolean ascending) {
+    protected SortBy(String column, boolean ascending) {
         this.column = column;
         this.ascending = ascending;
+    }
+
+    public static SortBy sortBy(String column) {
+        return new SortBy(column);
+    }
+
+    public static SortBy sortBy(String column, boolean ascending) {
+        return new SortBy(column, ascending);
     }
 
     @Override

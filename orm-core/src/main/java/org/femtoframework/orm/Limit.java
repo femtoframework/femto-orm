@@ -15,16 +15,24 @@ public class Limit implements Externalizable {
     private int offset = 0;
     private int limit = 100;
 
-    public Limit(){
+    public Limit() {
     }
 
-    public Limit(int limit) {
+    protected Limit(int limit) {
         this(0, limit);
     }
 
-    public Limit(int offset, int limit) {
+    protected Limit(int offset, int limit) {
         this.offset = offset;
         this.limit = limit;
+    }
+
+    public static Limit limit(int limit) {
+        return new Limit(limit);
+    }
+
+    public static Limit limit(int offset, int limit) {
+        return new Limit(offset, limit);
     }
 
     @Override
