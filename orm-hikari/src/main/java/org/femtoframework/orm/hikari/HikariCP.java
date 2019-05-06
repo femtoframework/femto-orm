@@ -24,7 +24,7 @@ public class HikariCP extends HikariDataSource implements LifecycleMBean, NamedD
     @Property("default")
     private boolean isDefault = false;
 
-    private BeanPhase phase = BeanPhase.DISABLED;
+    private BeanPhase beanPhase = BeanPhase.DISABLED;
 
     /**
      * Implement method of getPhase
@@ -33,7 +33,7 @@ public class HikariCP extends HikariDataSource implements LifecycleMBean, NamedD
      */
     @Override
     public BeanPhase _doGetPhase() {
-        return phase;
+        return beanPhase;
     }
 
     /**
@@ -43,7 +43,7 @@ public class HikariCP extends HikariDataSource implements LifecycleMBean, NamedD
      */
     @Override
     public void _doSetPhase(BeanPhase phase) {
-        this.phase = phase;
+        this.beanPhase = phase;
     }
 
     /**

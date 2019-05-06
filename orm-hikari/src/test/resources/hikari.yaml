@@ -3,6 +3,8 @@ kind: Component
 metadata:
   namespace: orm
   name: derby
+  annotations:
+    defaultFor: "javax.sql.DataSource,org.femtoframework.orm.NamedDataSource"
 spec:
   class: org.femtoframework.orm.hikari.HikariCP
   default: true
