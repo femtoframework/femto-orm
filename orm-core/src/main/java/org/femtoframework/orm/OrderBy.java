@@ -6,31 +6,31 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 /**
- * SortBy
+ * OrderBy
  */
-public class SortBy implements Externalizable {
+public class OrderBy implements Externalizable {
 
     private String column;
     private boolean ascending = true;
 
-    public SortBy() {
+    public OrderBy() {
     }
 
-    protected SortBy(String column) {
+    protected OrderBy(String column) {
         this(column, true);
     }
 
-    protected SortBy(String column, boolean ascending) {
+    protected OrderBy(String column, boolean ascending) {
         this.column = column;
         this.ascending = ascending;
     }
 
-    public static SortBy sortBy(String column) {
-        return new SortBy(column);
+    public static OrderBy orderBy(String column) {
+        return new OrderBy(column);
     }
 
-    public static SortBy sortBy(String column, boolean ascending) {
-        return new SortBy(column, ascending);
+    public static OrderBy orderBy(String column, boolean ascending) {
+        return new OrderBy(column, ascending);
     }
 
     @Override

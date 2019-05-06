@@ -2,7 +2,6 @@ package org.femtoframework.orm.ext;
 
 import org.femtoframework.bean.InitializableMBean;
 import org.femtoframework.bean.annotation.Ignore;
-import org.femtoframework.bean.annotation.Property;
 import org.femtoframework.bean.info.BeanInfo;
 import org.femtoframework.bean.info.BeanInfoUtil;
 import org.femtoframework.bean.info.PropertyInfo;
@@ -54,14 +53,14 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
      *
      * @param columns    Specify the columns to list, if first column is "*", means select all columns
      * @param limit      Limit the result set
-     * @param sortBy     SortBy specific column
+     * @param orderBy     OrderBy specific column
      * @param query      Query part after "WHERE" in SQL, query should use "id = ? AND name = ?" syntax
      * @param parameters Parameters in sequences
      * @return entities, zero size list if there is no entity
      * @throws RepositoryException SQL Exception or downstream exceptions
      */
     @Override
-    public List<E> listBy(String[] columns, Limit limit, SortBy sortBy, String query, Object... parameters) throws RepositoryException {
+    public List<E> listBy(String[] columns, Limit limit, OrderBy orderBy, String query, Object... parameters) throws RepositoryException {
         StringBuilder sb = new StringBuilder(128);
         sb.append("SELECT ");
         if (columns == null || columns.length == 0) {

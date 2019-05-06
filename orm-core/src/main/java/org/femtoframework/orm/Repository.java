@@ -116,12 +116,12 @@ public interface Repository<E> extends NamedBean {
      *
      * @param columns Specify the columns to list, if first column is "*", means select all columns
      * @param limit Limit the result set
-     * @param sortBy SortBy specific column
+     * @param orderBy OrderBy specific column
      * @return all entities, zero size list if there is no entity
      * @throws RepositoryException SQL Exception or downstream exceptions
      */
-    default List<E> listAll(String[] columns, Limit limit, SortBy sortBy) throws RepositoryException {
-        return listBy(columns, limit, sortBy, null);
+    default List<E> listAll(String[] columns, Limit limit, OrderBy orderBy) throws RepositoryException {
+        return listBy(columns, limit, orderBy, null);
     }
 
     /**
@@ -129,31 +129,31 @@ public interface Repository<E> extends NamedBean {
      *
      * @param columns Specify the columns to list, if first column is "*", means select all columns
      * @param limit Limit the result set
-     * @param sortBy SortBy specific column
+     * @param orderBy OrderBy specific column
      * @param query Query part after "WHERE" in SQL, query should use "id = ? AND name = ?" syntax, if it is null and there is no parameter, that means all
      * @param parameters Parameters in sequences
      * @return entities, zero size list if there is no entity
      * @throws RepositoryException SQL Exception or downstream exceptions
      */
-    List<E> listBy(String[] columns, Limit limit, SortBy sortBy, String query, Object... parameters) throws RepositoryException;
+    List<E> listBy(String[] columns, Limit limit, OrderBy orderBy, String query, Object... parameters) throws RepositoryException;
 
     /**
      * List entities by given conditions
      *
      * @param columns Specify the columns to list, if first column is "*", means select all columns
      * @param limit Limit the result set
-     * @param sortBy SortBy specific column
+     * @param orderBy OrderBy specific column
      * @param query Query part after "WHERE" in SQL, query should use "id = :foo_id AND name = :foo_name" syntax
      * @param parameters Parameters should have {foo_id->123,foo_name->'Sheldon'}
      * @return entities, zero size list if there is no entity
      * @throws RepositoryException SQL Exception or downstream exceptions
      */
-    default List<E> listBy(String[] columns, Limit limit, SortBy sortBy, String query, Parameters parameters) throws RepositoryException {
+    default List<E> listBy(String[] columns, Limit limit, OrderBy orderBy, String query, Parameters parameters) throws RepositoryException {
         if (StringUtil.isInvalid(query)) {
             throw new IllegalArgumentException("No any condition in the query:" + query);
         }
         IndexedQuery indexedQuery = toIndexedQuery(query);
-        return listBy(columns, limit, sortBy, indexedQuery.query, toParameters(indexedQuery.index, parameters));
+        return listBy(columns, limit, orderBy, indexedQuery.query, toParameters(indexedQuery.index, parameters));
     }
 
     /**
