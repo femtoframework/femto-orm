@@ -12,6 +12,7 @@
 
 .idea/
 target/
+*/device
 *.iml
 
 # Package Files #
