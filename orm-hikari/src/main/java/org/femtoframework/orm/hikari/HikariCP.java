@@ -73,6 +73,7 @@ public class HikariCP extends HikariDataSource implements LifecycleMBean, NamedD
      */
     public void _doStart() {
         try (Connection connection = getConnection()) {
+            RepositoryUtil.getModule().addDatasource(this);
         }
         catch (SQLException e) {
             logger.error("Starting HikariCP error", e);
@@ -80,6 +81,7 @@ public class HikariCP extends HikariDataSource implements LifecycleMBean, NamedD
     }
 
     public void _doDestroy() {
+        RepositoryUtil.getModule().delete(getName());
         this.close();
     }
 

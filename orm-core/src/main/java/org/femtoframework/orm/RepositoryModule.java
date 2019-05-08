@@ -7,6 +7,13 @@ import javax.sql.DataSource;
 public interface RepositoryModule extends Factory<DataSource> {
 
     /**
+     * Add DataSource
+     *
+     * @param dataSource DataSource
+     */
+    void addDatasource(NamedDataSource dataSource);
+
+    /**
      * Return RepositoryFactory by DataSource
      *
      * @param dataSource DataSource

@@ -16,6 +16,16 @@ public class SimpleRepositoryModule extends BaseFactory<DataSource> implements R
     private Map<DataSource, RepositoryFactory> factoryMap = new ConcurrentHashMap<>();
 
     /**
+     * Add DataSource
+     *
+     * @param dataSource DataSource
+     */
+    @Override
+    public void addDatasource(NamedDataSource dataSource) {
+        add(dataSource);
+    }
+
+    /**
      * Return RepositoryFactory by DataSource
      *
      * @param dataSource DataSource
