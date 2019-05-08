@@ -397,16 +397,16 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
                 }
             }
         }
-//        if (idPropertyInfo == null) {
-//            throw new IllegalStateException("No 'id'?");
-//        }
-//        else {
-        int id = idPropertyInfo.invokeGetter(entity);
-        if (id == 0) {
-            throw new IllegalStateException("The id is zero");
+        if (idPropertyInfo == null) {
+            throw new IllegalStateException("No 'id'?");
         }
-        pstmt.setObject(i, id);
-//        }
+        else {
+            int id = idPropertyInfo.invokeGetter(entity);
+            if (id == 0) {
+                throw new IllegalStateException("The id is zero");
+            }
+            pstmt.setObject(i, id);
+        }
         return idPropertyInfo;
     }
 
@@ -454,12 +454,11 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
      */
     @Override
     public int save(E entity, Parameters options) throws RepositoryException {
-        int id = idPropertyInfo.invokeGetter(entity);
+        int id = idPropertyInfo != null ? idPropertyInfo.invokeGetter(entity) : 0;
         if (id == 0) {
             //Create
             return create(entity, options) ? 1 : -1;
-        }
-        else {
+        } else {
             //Update
             return update(entity, options) ? 0 : -1;
         }
@@ -480,7 +479,7 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
         boolean[] result = new boolean[entities.size()];
         int i = 0;
         for(E entity: entities) {
-            int id = idPropertyInfo.invokeGetter(entity);
+            int id = idPropertyInfo != null ? idPropertyInfo.invokeGetter(entity) : 0;
             if (id == 0) {
                 toCreate.add(entity);
                 result[i++] = true;
@@ -644,9 +643,6 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
         }
         this.beanInfo = BeanInfoUtil.getBeanInfo(entityClass, true);
         this.idPropertyInfo = beanInfo.getProperty("id");
-        if (idPropertyInfo == null) {
-            throw new IllegalStateException("No 'id' in the entity");
-        }
         this.dialect = RepositoryUtil.getDialect(dataSource);
     }
 
