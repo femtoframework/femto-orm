@@ -18,18 +18,20 @@ public class SimpleRepositoryFactory extends BaseFactory<Repository> implements 
     /**
      * Return Repository by domainClass
      *
+     * @param tableName If it is null, will use name conversion from DomainClass
      * @param domainClass Domain Class
+     * @param <E> Entity
      * @return Repository
      */
-    @Override
-    public <E> Repository<E> getRepository(Class<E> domainClass) {
-        String tableName = NamingConvention.format(domainClass.getSimpleName());
+    public <E> Repository<E> getRepository(String tableName, Class<E> domainClass) {
+        tableName = tableName == null ? NamingConvention.format(domainClass.getSimpleName()) : tableName;
         Repository<E> repository = get(tableName);
         if (repository == null) {
             synchronized (this) {
                 repository = get(tableName);
                 if (repository == null) {
                     JdbcRepository<E> jdbcRepository = new JdbcRepository<>();
+                    jdbcRepository.setTableName(tableName);
                     jdbcRepository.setDataSource(dataSource);
                     jdbcRepository.setEntityClass(domainClass);
                     jdbcRepository.init();

@@ -17,8 +17,19 @@ public interface RepositoryFactory extends Factory<Repository> {
      * @param <E> Entity
      * @return Repository
      */
-    <E> Repository<E> getRepository(Class<E> domainClass);
+    default <E> Repository<E> getRepository(Class<E> domainClass) {
+        return getRepository(null, domainClass);
+    }
 
+    /**
+     * Return Repository by domainClass
+     *
+     * @param tableName If it is null, will use name conversion from DomainClass
+     * @param domainClass Domain Class
+     * @param <E> Entity
+     * @return Repository
+     */
+    <E> Repository<E> getRepository(String tableName, Class<E> domainClass);
     /**
      * Type Safe Repository
      *
