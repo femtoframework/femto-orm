@@ -132,7 +132,7 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
                 if (rs != null) {
                     rs.close();
                 }
-                String msg = "Creating entity " + toString(newSql, parameters) + " error";
+                String msg = "Listing entities " + toString(newSql, parameters) + " error";
                 logger.error(msg, e);
                 throw new RepositoryException(msg, e);
             }
