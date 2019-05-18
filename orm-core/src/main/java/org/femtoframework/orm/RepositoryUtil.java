@@ -82,4 +82,42 @@ public class RepositoryUtil {
     public static DataSource getDefaultDataSource() {
         return getModule().getDefaultDataSource();
     }
+
+    /**
+     * 设置自动Commit
+     *
+     * @param conn
+     * @param isAutoCommit 是否自动Commit
+     * @return 原先是否自动Commit
+     */
+    public static boolean setAutoCommit(Connection conn, boolean isAutoCommit)
+    {
+        boolean orig = true;
+        try {
+            if (conn != null) {
+                orig = conn.getAutoCommit();
+                conn.setAutoCommit(isAutoCommit);
+                return orig;
+            }
+        }
+        catch (Exception e) {
+        }
+        return orig;
+    }
+
+    /**
+     * 回滚
+     *
+     * @param conn
+     */
+    public static void rollback(Connection conn)
+    {
+        try {
+            if (conn != null) {
+                conn.rollback();
+            }
+        }
+        catch (SQLException e) {
+        }
+    }
 }
