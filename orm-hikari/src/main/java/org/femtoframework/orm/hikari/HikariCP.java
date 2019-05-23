@@ -5,6 +5,7 @@ import org.femtoframework.bean.BeanPhase;
 import org.femtoframework.bean.LifecycleMBean;
 import org.femtoframework.bean.Nameable;
 import org.femtoframework.bean.annotation.Property;
+import org.femtoframework.io.IOUtil;
 import org.femtoframework.orm.NamedDataSource;
 import org.femtoframework.orm.RepositoryUtil;
 import org.femtoframework.orm.dialect.RdbmsDialect;
@@ -25,6 +26,11 @@ public class HikariCP extends HikariDataSource implements LifecycleMBean, NamedD
     private boolean isDefault = false;
 
     private BeanPhase beanPhase = BeanPhase.DISABLED;
+
+
+    public HikariCP() {
+        RepositoryUtil.getModule().addDatasource(this);
+    }
 
     /**
      * Implement method of getPhase
@@ -72,11 +78,15 @@ public class HikariCP extends HikariDataSource implements LifecycleMBean, NamedD
      * Start internally
      */
     public void _doStart() {
-        try (Connection connection = getConnection()) {
-            RepositoryUtil.getModule().addDatasource(this);
+        Connection connection = null;
+        try {
+            connection = getConnection();
         }
         catch (SQLException e) {
             logger.error("Starting HikariCP error", e);
+        }
+        finally {
+            IOUtil.close(connection);
         }
     }
 
