@@ -33,6 +33,9 @@ public class SimpleRepositoryModule extends BaseFactory<DataSource> implements R
      */
     @Override
     public RepositoryFactory getRepositoryFactory(DataSource dataSource) {
+        if (dataSource == null) {
+            return null;
+        }
         RepositoryFactory factory = factoryMap.get(dataSource);
         if (factory == null) {
             SimpleRepositoryFactory simpleRepositoryFactory = new SimpleRepositoryFactory();

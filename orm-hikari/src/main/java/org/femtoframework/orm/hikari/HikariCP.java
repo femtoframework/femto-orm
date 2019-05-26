@@ -29,7 +29,7 @@ public class HikariCP extends HikariDataSource implements LifecycleMBean, NamedD
 
 
     public HikariCP() {
-        RepositoryUtil.getModule().addDatasource(this);
+
     }
 
     /**
@@ -56,6 +56,9 @@ public class HikariCP extends HikariDataSource implements LifecycleMBean, NamedD
      * Initiliaze internally
      */
     public void _doInit() {
+
+        RepositoryUtil.getModule().addDatasource(this);
+
         if (getProvider() != null) { //AutoConfig
             RdbmsDialect dialect = RepositoryUtil.getDialect(getProvider());
             if (dialect != null) {
@@ -140,10 +143,43 @@ public class HikariCP extends HikariDataSource implements LifecycleMBean, NamedD
     }
 
     public void setName(String name) {
-        setPoolName(name);
+        if (getBeanPhase().isBeforeOrCurrent(BeanPhase.STARTING)) {
+            setPoolName(name);
+        }
     }
 
     public void setProvider(String provider) {
         this.provider = provider;
+    }
+
+    public void setJdbcUrl(String url) {
+        if (getBeanPhase().isBeforeOrCurrent(BeanPhase.STARTING)) {
+            super.setJdbcUrl(url);
+        }
+    }
+
+
+    public void setConnectionInitSql(String sql) {
+        if (getBeanPhase().isBeforeOrCurrent(BeanPhase.STARTING)) {
+            super.setConnectionInitSql(sql);
+        }
+    }
+
+    public void setConnectionTestQuery(String sql) {
+        if (getBeanPhase().isBeforeOrCurrent(BeanPhase.STARTING)) {
+            super.setConnectionTestQuery(sql);
+        }
+    }
+
+    public void setDataSourceClassName(String className) {
+        if (getBeanPhase().isBeforeOrCurrent(BeanPhase.STARTING)) {
+            super.setDataSourceClassName(className);
+        }
+    }
+
+    public void setDriverClassName(String className) {
+        if (getBeanPhase().isBeforeOrCurrent(BeanPhase.STARTING)) {
+            super.setDriverClassName(className);
+        }
     }
 }
