@@ -106,7 +106,7 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
             try (PreparedStatement pstmt = conn.prepareStatement(newSql)) {
                 if (parameters != null && parameters.length > 0) {
                     for(int i = 0; i < parameters.length; i ++) {
-                        pstmt.setObject(i+1, parameters[i]);
+                        pstmt.setObject(i+1, convert(parameters[i]));
                     }
                 }
 
@@ -160,7 +160,7 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 if (parameters != null && parameters.length > 0) {
                     for(int i = 0; i < parameters.length; i ++) {
-                        pstmt.setObject(i+1, parameters[i]);
+                        pstmt.setObject(i+1, convert(parameters[i]));
                     }
                 }
                 rs = pstmt.executeQuery();
@@ -304,7 +304,7 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
                 int i = 1;
                 for(PropertyInfo propertyInfo: beanInfo.getProperties()) {
                     if (propertyInfo.isReadable()) {
-                        pstmt.setObject(i ++, propertyInfo.invokeGetter(entity));
+                        pstmt.setObject(i ++, convert(propertyInfo.invokeGetter(entity)));
                     }
                 }
                 return pstmt.executeUpdate() >= 1;
@@ -337,7 +337,7 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
                     int i = 1;
                     for (PropertyInfo propertyInfo : beanInfo.getProperties()) {
                         if (propertyInfo.isReadable()) {
-                            pstmt.setObject(i++, propertyInfo.invokeGetter(e));
+                            pstmt.setObject(i++, convert(propertyInfo.invokeGetter(e)));
                         }
                     }
                     pstmt.addBatch();
@@ -382,6 +382,13 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
         }
     }
 
+    protected Object convert(Object value) {
+        if (value instanceof Date) {
+            return new Timestamp(((Date)value).getTime());
+        }
+        return value;
+    }
+
 
     protected PropertyInfo fillForUpdate(PreparedStatement pstmt, E entity) throws SQLException {
         int i = 1;
@@ -390,7 +397,7 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
             if (propertyInfo.isReadable()) {
                 String name = propertyInfo.getName();
                 if (!"id".equalsIgnoreCase(name)) {
-                    pstmt.setObject(i++, propertyInfo.invokeGetter(entity));
+                    pstmt.setObject(i++, convert(propertyInfo.invokeGetter(entity)));
                 }
                 else {
                     idPropertyInfo = propertyInfo;
@@ -573,7 +580,7 @@ public class JdbcRepository<E> implements Repository<E>, InitializableMBean {
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 if (parameters != null && parameters.length > 0) {
                     for (int i = 0; i < parameters.length; i++) {
-                        pstmt.setObject(i+1, parameters[i]);
+                        pstmt.setObject(i+1, convert(parameters[i]));
                     }
                 }
                 return pstmt.executeUpdate() >= 1;
