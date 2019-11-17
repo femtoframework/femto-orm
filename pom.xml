@@ -11,7 +11,7 @@
 
     <groupId>org.femtoframework.orm</groupId>
     <artifactId>femto-orm</artifactId>
-    <version>7.0.0</version>
+    <version>7.0.0-SNAPSHOT</version>
     <modules>
         <module>orm-core</module>
         <module>orm-hikari</module>
@@ -44,17 +44,22 @@
             <dependency>
                 <groupId>org.femtoframework.orm</groupId>
                 <artifactId>orm-core</artifactId>
-                <version>7.0.0</version>
+                <version>7.0.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>org.femtoframework.orm</groupId>
                 <artifactId>orm-hikari</artifactId>
-                <version>7.0.0</version>
+                <version>7.0.0-SNAPSHOT</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
 
-  <scm>
-    <tag>v7.0.0</tag>
-  </scm>
+    <!-- SCM configurations to allow maven updates to source control.
+E.g.: org.apache.maven.plugins:maven-release-plugin can create and update release tags to your git repo -->
+    <scm>
+        <connection>scm:git:git@github.com:femtoframework/femto-orm.git</connection>
+        <developerConnection>scm:git:git@github.com:femtoframework/femto-orm.git</developerConnection>
+        <url>https://github.com/femtoframework/femto-orm.git</url>
+        <tag>v7.0.0</tag>
+    </scm>
 </project>
