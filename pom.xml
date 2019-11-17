@@ -11,7 +11,7 @@
 
     <groupId>org.femtoframework.orm</groupId>
     <artifactId>femto-orm</artifactId>
-    <version>7.0.0-SNAPSHOT</version>
+    <version>7.0.0</version>
     <modules>
         <module>orm-core</module>
         <module>orm-hikari</module>
@@ -44,12 +44,12 @@
             <dependency>
                 <groupId>org.femtoframework.orm</groupId>
                 <artifactId>orm-core</artifactId>
-                <version>7.0.0-SNAPSHOT</version>
+                <version>7.0.0</version>
             </dependency>
             <dependency>
                 <groupId>org.femtoframework.orm</groupId>
                 <artifactId>orm-hikari</artifactId>
-                <version>7.0.0-SNAPSHOT</version>
+                <version>7.0.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
